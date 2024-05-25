@@ -254,19 +254,18 @@ extern NSBundle *uYouPlusBundle();
         selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
             if (IS_ENABLED(@"replaceCopyandPasteButtons_enabled")) {
                 // Import Settings functionality
-                NSOpenPanel *openPanel = [NSOpenPanel openPanel];
-                openPanel.title = LOC(@"SELECT_SETTINGS_FILE");
-                openPanel.allowedFileTypes = @[@"txt"];
-                [openPanel beginWithCompletionHandler:^(NSInteger result) {
-                    if (result == NSFileHandlingPanelOKButton) {
-                        NSURL *selectedFileURL = [openPanel URLs].firstObject;
-                        NSString *filePath = [selectedFileURL path];
-                        NSString *settingsString = [NSString stringWithContentsOfFile:filePath encoding:NSUTF8StringEncoding error:nil];
-                        if (settingsString.length > 0) {
-                            // Show confirmation message or perform some other action here
-                        }
-                    }
+                UIAlertController *alertController = [UIAlertController alertControllerWithTitle:LOC(@"SELECT_SETTINGS_FILE") message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+                [alertController addTextFieldWithConfigurationHandler:^(UITextField *textField) {
+                    textField.placeholder = LOC(@"ENTER_FILE_NAME");
                 }];
+                [alertController addAction:[UIAlertAction actionWithTitle:LOC(@"SELECT_FILE") style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                    UIDocumentPickerViewController *documentPicker = [[UIDocumentPickerViewController alloc] initWithDocumentTypes:@[@"public.text"] inMode:UIDocumentPickerModeOpen];
+                    documentPicker.delegate = self;
+                    documentPicker.allowsMultipleSelection = NO;
+                    [self presentViewController:documentPicker animated:YES completion:nil];
+                }]];
+                [alertController addAction:[UIAlertAction actionWithTitle:LOC(@"CANCEL") style:UIAlertActionStyleCancel handler:nil]];
+                [settingsViewController presentViewController:alertController animated:YES completion:nil];
             } else {
                 // Paste Settings functionality (default behavior)
                 UIAlertController *confirmPasteAlert = [UIAlertController alertControllerWithTitle:LOC(@"CONFIRM_PASTE_TITLE") message:LOC(@"CONFIRM_PASTE_MESSAGE") preferredStyle:UIAlertControllerStyleAlert];
