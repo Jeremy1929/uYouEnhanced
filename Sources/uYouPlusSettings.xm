@@ -259,10 +259,10 @@ extern NSBundle *uYouPlusBundle();
                     textField.placeholder = LOC(@"ENTER_FILE_NAME");
                 }];
                 [alertController addAction:[UIAlertAction actionWithTitle:LOC(@"SELECT_FILE") style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-                    UIDocumentPickerViewController *documentPicker = [[UIDocumentPickerViewController alloc] initWithDocumentTypes:@[@"public.text"] inMode:UIDocumentPickerModeOpen];
-                    documentPicker.delegate = self;
+                   UIDocumentPickerViewController *documentPicker = [[UIDocumentPickerViewController alloc] initWithDocumentTypes:@[@"public.text"] inMode:UIDocumentPickerModeOpen];
+                    documentPicker.delegate = (id<UIDocumentPickerDelegate>)self; // Cast self to the appropriate type - @arichornlover
                     documentPicker.allowsMultipleSelection = NO;
-                    [self presentViewController:documentPicker animated:YES completion:nil];
+                    [settingsViewController presentViewController:documentPicker animated:YES completion:nil];
                 }]];
                 [alertController addAction:[UIAlertAction actionWithTitle:LOC(@"CANCEL") style:UIAlertActionStyleCancel handler:nil]];
                 [settingsViewController presentViewController:alertController animated:YES completion:nil];
