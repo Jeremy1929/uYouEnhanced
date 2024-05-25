@@ -198,18 +198,26 @@ extern NSBundle *uYouPlusBundle();
         /* MAIN    App UI Keys */ @"hideHomeTab_enabled", @"lowContrastMode_enabled", @"fixLowContrastMode_enabled", @"disableModernButtons_enabled", @"disableRoundedHints_enabled", @"disableModernFlags_enabled", @"ytNoModernUI_enabled", @"enableVersionSpoofer_enabled",
         /* MAIN      Misc Keys */ @"uYouAdBlockingWorkaroundLite_enabled", @"uYouAdBlockingWorkaround_enabled", @"uYouAdBlockingWorkaround_enabled", @"disableAnimatedYouTubeLogo_enabled", @"centerYouTubeLogo_enabled", @"hideYouTubeLogo_enabled", @"ytStartupAnimation_enabled", @"disableHints_enabled", @"stickNavigationBar_enabled", @"hideSponsorBlockButton_enabled", @"hideChipBar_enabled", @"hidePlayNextInQueue_enabled", @"hideCommunityPosts_enabled", @"hideChannelHeaderLinks_enabled", @"iPhoneLayout_enabled", @"bigYTMiniPlayer_enabled", @"reExplore_enabled", @"autoHideHomeBar_enabled", @"hideSubscriptionsNotificationBadge_enabled", @"fixCasting_enabled", @"newSettingsUI_enabled", @"flex_enabled",
         /* TWEAK     uYou Keys */ @"hideCastButton", @"relatedVideosAtTheEndOfYTVideos", @"disableAgeRestriction", @"removeYouTubeAds", @"noSuggestedVideoAtEnd", @"showedWelcomeVC", @"shortsProgressBar", @"hideShortsCells", @"removeShortsCell",
-        /* TWEAK    YTUHD Keys */ @"EnableVP9", @"AllVP9"];
+        /* TWEAK    YTUHD Keys */ @"EnableVP9", @"AllVP9"];        
                 for (NSString *key in copyKeys) {
                     if ([userDefaults objectForKey:key]) {
                         NSString *value = [userDefaults objectForKey:key];
                         [settingsString appendFormat:@"%@: %@\n", key, value];
                     }
-                }   
-                NSString *fileName = @"uyouenhanced_settings.txt";
-                NSString *filePath = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES)[0] stringByAppendingPathComponent:fileName];
-                if (![settingsString writeToFile:filePath atomically:YES encoding:NSUTF8StringEncoding error:nil]) {
-                    NSLog(@"Failed to export settings to file.");
                 }
+                UIAlertController *fileNameAlert = [UIAlertController alertControllerWithTitle:LOC(@"ENTER_FILE_NAME") message:nil preferredStyle:UIAlertControllerStyleAlert];
+                [fileNameAlert addTextFieldWithConfigurationHandler:nil];
+                [fileNameAlert addAction:[UIAlertAction actionWithTitle:LOC(@"SAVE") style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                    NSString *fileName = [fileNameAlert.textFields[0] text];
+                    if (fileName.length > 0) {
+                        NSString *filePath = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES)[0] stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.txt", fileName]];
+                        if (![settingsString writeToFile:filePath atomically:YES encoding:NSUTF8StringEncoding error:nil]) {
+                            NSLog(@"Failed to export settings to file.");
+                        }
+                    }
+                }]];
+                [fileNameAlert addAction:[UIAlertAction actionWithTitle:LOC(@"CANCEL") style:UIAlertActionStyleCancel handler:nil]];
+                [settingsViewController presentViewController:fileNameAlert animated:YES completion:nil];
             } else {
                 // Copy Settings functionality (default behavior)
                 NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
@@ -246,27 +254,19 @@ extern NSBundle *uYouPlusBundle();
         selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
             if (IS_ENABLED(@"replaceCopyandPasteButtons_enabled")) {
                 // Import Settings functionality
-                UIAlertController *confirmImportAlert = [UIAlertController alertControllerWithTitle:LOC(@"CONFIRM_IMPORT_TITLE") message:LOC(@"CONFIRM_IMPORT_MESSAGE") preferredStyle:UIAlertControllerStyleAlert];
-                [confirmImportAlert addAction:[UIAlertAction actionWithTitle:LOC(@"CANCEL") style:UIAlertActionStyleCancel handler:nil]];
-                [confirmImportAlert addAction:[UIAlertAction actionWithTitle:LOC(@"CONFIRM") style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-                    NSString *fileName = @"uyouenhanced_settings.txt";
-                    NSString *filePath = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES)[0] stringByAppendingPathComponent:fileName];
-                    NSString *settingsString = [NSString stringWithContentsOfFile:filePath encoding:NSUTF8StringEncoding error:nil];
-                    if (settingsString.length > 0) {
-                        NSArray *lines = [settingsString componentsSeparatedByString:@"\n"];
-                        for (NSString *line in lines) {
-                            NSArray *components = [line componentsSeparatedByString:@": "];
-                            if (components.count == 2) {
-                                NSString *key = components[0];
-                                NSString *value = components[1];
-                                [[NSUserDefaults standardUserDefaults] setObject:value forKey:key];
-                            }
+                NSOpenPanel *openPanel = [NSOpenPanel openPanel];
+                openPanel.title = LOC(@"SELECT_SETTINGS_FILE");
+                openPanel.allowedFileTypes = @[@"txt"];
+                [openPanel beginWithCompletionHandler:^(NSInteger result) {
+                    if (result == NSFileHandlingPanelOKButton) {
+                        NSURL *selectedFileURL = [openPanel URLs].firstObject;
+                        NSString *filePath = [selectedFileURL path];
+                        NSString *settingsString = [NSString stringWithContentsOfFile:filePath encoding:NSUTF8StringEncoding error:nil];
+                        if (settingsString.length > 0) {
+                            // Show confirmation message or perform some other action here
                         }
-                        [settingsViewController reloadData];
-                        SHOW_RELAUNCH_YT_SNACKBAR;
                     }
-                }]];
-                [settingsViewController presentViewController:confirmImportAlert animated:YES completion:nil];
+                }];
             } else {
                 // Paste Settings functionality (default behavior)
                 UIAlertController *confirmPasteAlert = [UIAlertController alertControllerWithTitle:LOC(@"CONFIRM_PASTE_TITLE") message:LOC(@"CONFIRM_PASTE_MESSAGE") preferredStyle:UIAlertControllerStyleAlert];
