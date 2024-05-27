@@ -116,25 +116,18 @@
 }
 
 - (void)saveIcon {
-    if (![UIApplication sharedApplication].supportsAlternateIcons) {
-        NSLog(@"Alternate icons are not supported on this device.");
-        return;
-    }
-    
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         NSBundle *mainBundle = [NSBundle mainBundle];
         NSString *selectedIcon = self.selectedIconIndex >= 0 ? self.appIcons[self.selectedIconIndex] : nil;
-        NSString *currentIconName = [[[mainBundle infoDictionary] objectForKey:@"ALTAppIcon"] stringByAppendingString:@".png"];
+        NSString *iconName = [selectedIcon.lastPathComponent stringByDeletingPathExtension];
 
-        if (![currentIconName isEqualToString:selectedIcon.lastPathComponent]) {
-            NSString *iconName = [selectedIcon.lastPathComponent stringByDeletingPathExtension];
+        if (![mainBundle.supportsAlternateIcons]) {
+            NSLog(@"Alternate icons are not supported on this device.");
+            return;
+        }
 
-            NSString *plistPath = [mainBundle pathForResource:@"Info" ofType:@"plist"];
-            NSMutableDictionary *infoDict = [NSMutableDictionary dictionaryWithContentsOfFile:plistPath];
-            [infoDict setObject:iconName forKey:@"ALTAppIcon"];
-            [infoDict writeToFile:plistPath atomically:YES];
-
-            [[UIApplication sharedApplication] setAlternateIconName:iconName completionHandler:^(NSError * _Nullable error) {
+        if (![iconName isEqualToString:[mainBundle.alternateIconName stringByAppendingString:@".png"]]) {
+            [mainBundle setAlternateIconName:iconName completionHandler:^(NSError * _Nullable error) {
                 if (error) {
                     NSLog(@"Error setting alternate icon: %@", error.localizedDescription);
                     [self showAlertWithTitle:@"Error" message:@"Failed to set alternate icon"];
