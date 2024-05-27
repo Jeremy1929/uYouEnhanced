@@ -1219,6 +1219,7 @@ NSData *cellDividerData;
 }
 %end
 
+/*
 // Hide Shorts Cells - @PoomSmart, @iCrazeiOS & @Dayanch96
 %hook YTIElementRenderer
 - (NSData *)elementData {
@@ -1246,6 +1247,7 @@ NSData *cellDividerData;
     return %orig;
 }
 %end
+*/
 
 // Red Subscribe Button - 17.33.2 and up - @arichornlover
 %hook ELMContainerNode
@@ -1270,7 +1272,7 @@ NSData *cellDividerData;
 }
 %end
 
-// Hide the (Connect / Thanks / Save / Report) Buttons under the Video Player - 17.33.2 and up - @arichornlover - Legacy / Terrible Implementation ⚠️
+// Hide the (Connect / Thanks / Save / Report) Buttons under the Video Player - 17.33.2 and up - @arichornlover (inspired by @PoomSmart's version) LEGACY METHOD ⚠️
 %hook _ASDisplayView
 - (void)layoutSubviews {
     %orig;
@@ -1293,18 +1295,15 @@ NSData *cellDividerData;
 }
 %end
 
-// Hide the (Connect / Share / Remix / Thanks / Download / Clip / Save / Report) Buttons under the Video Player - 17.33.2 and up - @PoomSmart (inspired by @arichornlover)
-static BOOL shouldHideCell(ASNodeController *nodeController, NSArray <NSString *> *identifiers, NSString *accessibilityLabel) { // This stopped working on May 14th 2024 due to a Server-Side Change from YouTube.
+// Hide the (Connect / Share / Remix / Thanks / Download / Clip / Save / Report) Buttons under the Video Player - 17.33.2 and up - @PoomSmart (inspired by @arichornlover) - METHOD BROKE Server-Side on May 14th 2024
+static BOOL findCell(ASNodeController *nodeController, NSArray <NSString *> *identifiers) {
     for (id child in [nodeController children]) {
         if ([child isKindOfClass:%c(ELMNodeController)]) {
             NSArray <ELMComponent *> *elmChildren = [(ELMNodeController *)child children];
             for (ELMComponent *elmChild in elmChildren) {
                 for (NSString *identifier in identifiers) {
-                    if ([[elmChild description] containsString:identifier]) {
-                        if (accessibilityLabel && [[elmChild accessibilityLabel] isEqualToString:accessibilityLabel]) {
-                            return YES;
-                        }
-                    }
+                    if ([[elmChild description] containsString:identifier])
+                        return YES;
                 }
             }
         }
@@ -1313,15 +1312,14 @@ static BOOL shouldHideCell(ASNodeController *nodeController, NSArray <NSString *
             ASDisplayNode *childNode = ((ASNodeController *)child).node; // ELMContainerNode
             NSArray *yogaChildren = childNode.yogaChildren;
             for (ASDisplayNode *displayNode in yogaChildren) {
-                if ([identifiers containsObject:displayNode.accessibilityIdentifier]) {
-                    if (accessibilityLabel && [[displayNode accessibilityLabel] isEqualToString:accessibilityLabel]) {
-                        return YES;
-                    }
-                }
+                if ([identifiers containsObject:displayNode.accessibilityIdentifier])
+                    return YES;
             }
 
-            return shouldHideCell(child, identifiers, accessibilityLabel);
+            return findCell(child, identifiers);
         }
+
+        return NO;
     }
     return NO;
 }
@@ -1332,43 +1330,33 @@ static BOOL shouldHideCell(ASNodeController *nodeController, NSArray <NSString *
     if ([self.accessibilityIdentifier isEqualToString:@"id.video.scrollable_action_bar"]) {
         ASCellNode *node = [element node];
         ASNodeController *nodeController = [node controller];
-        
-        if (shouldHideCell(nodeController, @[@"id.video.share.button"], nil)) {
+        if (IS_ENABLED(@"hideShareButton_enabled") && findCell(nodeController, @[@"id.video.share.button"])) {
             return CGSizeZero;
         }
 
-        if (shouldHideCell(nodeController, @[@"id.video.remix.button"], nil)) {
+        if (IS_ENABLED(@"hideRemixButton_enabled") && findCell(nodeController, @[@"id.video.remix.button"])) {
             return CGSizeZero;
         }
 
-        if (shouldHideCell(nodeController, @[], @"Thanks")) {
+        if (IS_ENABLED(@"hideThanksButton_enabled") && findCell(nodeController, @[@"Thanks"])) {
             return CGSizeZero;
         }
 
-        if (shouldHideCell(nodeController, @[@"clip_button.eml"], nil)) {
+        if (IS_ENABLED(@"hideClipButton_enabled") && findCell(nodeController, @[@"clip_button.eml"])) {
             return CGSizeZero;
         }
 
-        if (shouldHideCell(nodeController, @[@"id.ui.add_to.offline.button"], nil)) {
+        if (IS_ENABLED(@"hideDownloadButton_enabled") && findCell(nodeController, @[@"id.ui.add_to.offline.button"])) {
             return CGSizeZero;
         }
 
-        if (shouldHideCell(nodeController, @[@"id.ui.carousel_header"], nil)) {
+        if (IS_ENABLED(@"hideCommentSection_enabled") && findCell(nodeController, @[@"id.ui.carousel_header"])) {
             return CGSizeZero;
         }
     }
     return %orig;
 }
-// - (BOOL)dataController:(id)dataController presentedSizeForElement:(id)element matchesSize:(CGSize)size { }
 
-%end
-
-%hook _ASDisplayView
-- (void)setAccessibilityLabel:(NSString *)accessibilityLabel {
-    %orig;
-    if ([accessibilityLabel isEqualToString:@"Thanks"]) {
-    }
-}
 %end
 
 // App Settings Overlay Options
@@ -1545,12 +1533,17 @@ static BOOL shouldHideCell(ASNodeController *nodeController, NSArray <NSString *
 }
 %end
 
-// Hide the Videos under the Video Player - @Dayanch96
+// Hide the Videos under the Video Player - @Dayanch96 & @arichornlover
 %group gNoRelatedWatchNexts
 %hook YTWatchNextResultsViewController
 - (void)setVisibleSections:(NSInteger)arg1 {
-    arg1 = 1;
-    %orig(arg1);
+    if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad && UIInterfaceOrientationIsLandscape([UIApplication sharedApplication].statusBarOrientation)) {
+        // doesn't hide Videos under the Video Player if iPad is in Landscape mode to prevent conflicts
+        return;
+    } else {
+        arg1 = 1;
+        %orig(arg1);
+    }
 }
 %end
 %end
