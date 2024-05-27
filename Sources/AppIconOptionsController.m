@@ -75,8 +75,8 @@
     CGFloat iconSize = 40.0;
     UIImage *iconImage = [UIImage imageWithContentsOfFile:iconPath];
     cell.imageView.image = [self resizeImage:iconImage toSize:CGSizeMake(iconSize, iconSize)];
-    cell.imageView.layer.cornerRadius = iconSize / 2;
-    cell.imageView.clipsToBounds = YES;
+    cell.imageView.layer.cornerRadius = 10.0;
+    cell.imageView.layer.masksToBounds = YES;
     cell.imageView.frame = CGRectMake(10, 10, iconSize, iconSize);
     
     if (indexPath.row == self.selectedIconIndex) {
