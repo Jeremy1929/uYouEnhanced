@@ -205,19 +205,10 @@ extern NSBundle *uYouPlusBundle();
                         [settingsString appendFormat:@"%@: %@\n", key, value];
                     }
                 }
-                UIAlertController *fileNameAlert = [UIAlertController alertControllerWithTitle:LOC(@"ENTER_FILE_NAME") message:nil preferredStyle:UIAlertControllerStyleAlert];
-                [fileNameAlert addTextFieldWithConfigurationHandler:nil];
-                [fileNameAlert addAction:[UIAlertAction actionWithTitle:LOC(@"SAVE") style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-                    NSString *fileName = [fileNameAlert.textFields[0] text];
-                    if (fileName.length > 0) {
-                        NSString *filePath = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES)[0] stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.txt", fileName]];
-                        if (![settingsString writeToFile:filePath atomically:YES encoding:NSUTF8StringEncoding error:nil]) {
-                            NSLog(@"Failed to export settings to file.");
-                        }
-                    }
-                }]];
-                [fileNameAlert addAction:[UIAlertAction actionWithTitle:LOC(@"CANCEL") style:UIAlertActionStyleCancel handler:nil]];
-                [settingsViewController presentViewController:fileNameAlert animated:YES completion:nil];
+                UIDocumentPickerViewController *documentPicker = [[UIDocumentPickerViewController alloc] initWithDocumentTypes:@[@"public.text"] inMode:UIDocumentPickerModeExportToService];
+                documentPicker.delegate = (id<UIDocumentPickerDelegate>)self;
+                documentPicker.allowsMultipleSelection = NO;
+                [settingsViewController presentViewController:documentPicker animated:YES completion:nil];
             } else {
                 // Copy Settings functionality (default behavior)
                 NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
@@ -254,18 +245,10 @@ extern NSBundle *uYouPlusBundle();
         selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
             if (IS_ENABLED(@"replaceCopyandPasteButtons_enabled")) {
                 // Import Settings functionality
-                UIAlertController *alertController = [UIAlertController alertControllerWithTitle:LOC(@"SELECT_SETTINGS_FILE") message:nil preferredStyle:UIAlertControllerStyleActionSheet];
-                [alertController addTextFieldWithConfigurationHandler:^(UITextField *textField) {
-                    textField.placeholder = LOC(@"ENTER_FILE_NAME");
-                }];
-                [alertController addAction:[UIAlertAction actionWithTitle:LOC(@"SELECT_FILE") style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-                   UIDocumentPickerViewController *documentPicker = [[UIDocumentPickerViewController alloc] initWithDocumentTypes:@[@"public.text"] inMode:UIDocumentPickerModeOpen];
-                    documentPicker.delegate = (id<UIDocumentPickerDelegate>)self; // Cast self to the appropriate type - @arichornlover
-                    documentPicker.allowsMultipleSelection = NO;
-                    [settingsViewController presentViewController:documentPicker animated:YES completion:nil];
-                }]];
-                [alertController addAction:[UIAlertAction actionWithTitle:LOC(@"CANCEL") style:UIAlertActionStyleCancel handler:nil]];
-                [settingsViewController presentViewController:alertController animated:YES completion:nil];
+                UIDocumentPickerViewController *documentPicker = [[UIDocumentPickerViewController alloc] initWithDocumentTypes:@[@"public.text"] inMode:UIDocumentPickerModeImport];
+                documentPicker.delegate = (id<UIDocumentPickerDelegate>)self;
+                documentPicker.allowsMultipleSelection = NO;
+                [settingsViewController presentViewController:documentPicker animated:YES completion:nil];
             } else {
                 // Paste Settings functionality (default behavior)
                 UIAlertController *confirmPasteAlert = [UIAlertController alertControllerWithTitle:LOC(@"CONFIRM_PASTE_TITLE") message:LOC(@"CONFIRM_PASTE_MESSAGE") preferredStyle:UIAlertControllerStyleAlert];
@@ -285,7 +268,7 @@ extern NSBundle *uYouPlusBundle();
                         [settingsViewController reloadData];
                         SHOW_RELAUNCH_YT_SNACKBAR;
                     }
-                }]];
+                }];
                 [settingsViewController presentViewController:confirmPasteAlert animated:YES completion:nil];
             }
             return YES;
