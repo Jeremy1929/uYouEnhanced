@@ -72,13 +72,12 @@
     
     NSString *iconPath = self.appIcons[indexPath.row];
     cell.textLabel.text = [iconPath.lastPathComponent stringByDeletingPathExtension];
-    
+    CGFloat iconSize = 40.0;
     UIImage *iconImage = [UIImage imageWithContentsOfFile:iconPath];
-    cell.imageView.image = iconImage;
-    cell.imageView.layer.cornerRadius = 10.0;
+    cell.imageView.image = [self resizeImage:iconImage toSize:CGSizeMake(iconSize, iconSize)];
+    cell.imageView.layer.cornerRadius = iconSize / 2;
     cell.imageView.clipsToBounds = YES;
-    cell.imageView.frame = CGRectMake(10, 10, 40, 40);
-    cell.textLabel.frame = CGRectMake(60, 10, self.view.frame.size.width - 70, 40);
+    cell.imageView.frame = CGRectMake(10, 10, iconSize, iconSize);
     
     if (indexPath.row == self.selectedIconIndex) {
         cell.accessoryType = UITableViewCellAccessoryCheckmark;
@@ -121,16 +120,20 @@
         NSLog(@"Alternate icons are not supported on this device.");
         return;
     }
+    
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        NSBundle *mainBundle = [NSBundle mainBundle];
         NSString *selectedIcon = self.selectedIconIndex >= 0 ? self.appIcons[self.selectedIconIndex] : nil;
-        if (selectedIcon) {
+        NSString *currentIconName = [[[mainBundle infoDictionary] objectForKey:@"ALTAppIcon"] stringByAppendingString:@".png"];
+
+        if (![currentIconName isEqualToString:selectedIcon.lastPathComponent]) {
             NSString *iconName = [selectedIcon.lastPathComponent stringByDeletingPathExtension];
-           
-            NSString *plistPath = [[NSBundle mainBundle] pathForResource:@"Info" ofType:@"plist"];
+
+            NSString *plistPath = [mainBundle pathForResource:@"Info" ofType:@"plist"];
             NSMutableDictionary *infoDict = [NSMutableDictionary dictionaryWithContentsOfFile:plistPath];
             [infoDict setObject:iconName forKey:@"ALTAppIcon"];
             [infoDict writeToFile:plistPath atomically:YES];
-            
+
             [[UIApplication sharedApplication] setAlternateIconName:iconName completionHandler:^(NSError * _Nullable error) {
                 if (error) {
                     NSLog(@"Error setting alternate icon: %@", error.localizedDescription);
@@ -144,7 +147,7 @@
                 }
             }];
         } else {
-            NSLog(@"Selected icon path is nil");
+            NSLog(@"Selected icon is the same as the current icon, no changes needed.");
         }
     });
 }
