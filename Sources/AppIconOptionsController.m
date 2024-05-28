@@ -24,6 +24,8 @@
     self.tableView.delegate = self;
     [self.view addSubview:self.tableView];
 
+    self.appIcons = @[@"White", @"YTLitePlus", @"Blue", @"Outline", @"2012", @"2013", @"2007", @"Black", @"Oreo", @"uYou", @"2012_Cyan", @"uYouPlus"];
+
     self.backButton = [UIButton buttonWithType:UIButtonTypeCustom];
     NSBundle *backIcon = [NSBundle bundleWithPath:[[NSBundle mainBundle] pathForResource:@"uYouPlus" ofType:@"bundle"]];
     UIImage *backImage = [UIImage imageNamed:@"Back.png" inBundle:backIcon compatibleWithTraitCollection:nil];
@@ -70,21 +72,18 @@
         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"Cell"];
     }
     
-    NSString *iconPath = self.appIcons[indexPath.row];
-    cell.textLabel.text = [iconPath.lastPathComponent stringByDeletingPathExtension];
-    CGFloat iconSize = 40.0;
-    UIImage *iconImage = [UIImage imageWithContentsOfFile:iconPath];
-    cell.imageView.image = [self resizeImage:iconImage toSize:CGSizeMake(iconSize, iconSize)];
-    cell.imageView.layer.cornerRadius = 10.0;
-    cell.imageView.layer.masksToBounds = YES;
-    cell.imageView.frame = CGRectMake(10, 10, iconSize, iconSize);
-    
+    NSString *iconName = self.appIcons[indexPath.row];
+    cell.textLabel.text = iconName;
+
+    UIImage *iconImage = [UIImage imageNamed:iconName];
+    cell.imageView.image = [self resizeImage:iconImage newSize:CGSizeMake(40, 40)];
+
     if (indexPath.row == self.selectedIconIndex) {
         cell.accessoryType = UITableViewCellAccessoryCheckmark;
     } else {
         cell.accessoryType = UITableViewCellAccessoryNone;
     }
-    
+
     return cell;
 }
 
@@ -96,21 +95,14 @@
 }
 
 - (void)resetIcon {
-    NSString *plistPath = [[NSBundle mainBundle] pathForResource:@"Info" ofType:@"plist"];
-    NSMutableDictionary *infoDict = [NSMutableDictionary dictionaryWithContentsOfFile:plistPath];
-    [infoDict removeObjectForKey:@"_alternateIconName"];
-    [infoDict writeToFile:plistPath atomically:YES];
-
-    [UIApplication sharedApplication]._setAlternatelconName:nil completionHandler:^(NSError * _Nullable error) {
+    [[UIApplication sharedApplication] setAlternateIconName:nil completionHandler:^(NSError * _Nullable error) {
         if (error) {
             NSLog(@"Error resetting icon: %@", error.localizedDescription);
             [self showAlertWithTitle:@"Error" message:@"Failed to reset icon"];
         } else {
             NSLog(@"Icon reset successfully");
             [self showAlertWithTitle:@"Success" message:@"Icon reset successfully"];
-            dispatch_async(dispatch_get_main_queue(), ^{
-                [self.tableView reloadData];
-            });
+            [self.tableView reloadData];
         }
     }];
 }
@@ -120,38 +112,20 @@
         NSLog(@"Alternate icons are not supported on this device.");
         return;
     }
-    
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        NSBundle *mainBundle = [NSBundle mainBundle];
-        NSString *selectedIcon = self.selectedIconIndex >= 0 ? self.appIcons[self.selectedIconIndex] : nil;
-        NSString *currentIconName = [UIApplication sharedApplication]._alternateIconName;
 
-        if (![currentIconName isEqualToString:selectedIcon.lastPathComponent]) {
-            NSString *iconName = [selectedIcon.lastPathComponent stringByDeletingPathExtension];
+    NSString *iconName = self.appIcons[self.selectedIconIndex];
 
-            NSString *plistPath = [mainBundle pathForResource:@"Info" ofType:@"plist"];
-            NSMutableDictionary *infoDict = [NSMutableDictionary dictionaryWithContentsOfFile:plistPath];
-            [infoDict setObject:iconName forKey:@"_alternateIconName"];
-            [infoDict writeToFile:plistPath atomically:YES];
-
-            [UIApplication sharedApplication]._setAlternatelconName:iconName completionHandler:^(NSError * _Nullable error) {
-                if (error) {
-                    NSLog(@"Error setting alternate icon: %@", error.localizedDescription);
-                    [self showAlertWithTitle:@"Error" message:@"Failed to set alternate icon"];
-                } else {
-                    NSLog(@"Alternate icon set successfully");
-                    [self showAlertWithTitle:@"Success" message:@"Alternate icon set successfully"];
-                    dispatch_async(dispatch_get_main_queue(), ^{
-                        [self.tableView reloadData];
-                    });
-                }
-            }];
+    [[UIApplication sharedApplication] setAlternateIconName:iconName completionHandler:^(NSError * _Nullable error) {
+        if (error) {
+            NSLog(@"Error setting alternate icon: %@", error.localizedDescription);
+            [self showAlertWithTitle:@"Error" message:@"Failed to set alternate icon"];
         } else {
-            NSLog(@"Selected icon is the same as the current icon, no changes needed.");
+            NSLog(@"Alternate icon set successfully");
+            [self showAlertWithTitle:@"Success" message:@"Alternate icon set successfully"];
+            [self.tableView reloadData];
         }
-    });
+    }];
 }
-
 
 - (UIImage *)resizeImage:(UIImage *)image toSize:(CGSize)size {
     UIGraphicsBeginImageContextWithOptions(size, NO, [UIScreen mainScreen].scale);
