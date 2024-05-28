@@ -98,26 +98,21 @@
 - (void)resetIcon {
     NSString *plistPath = [[NSBundle mainBundle] pathForResource:@"Info" ofType:@"plist"];
     NSMutableDictionary *infoDict = [NSMutableDictionary dictionaryWithContentsOfFile:plistPath];
-    [infoDict removeObjectForKey:@"ALTAppIcon"];
+    [infoDict removeObjectForKey:@"_alternateIconName"];
     [infoDict writeToFile:plistPath atomically:YES];
 
-    NSString *currentIconName = [UIApplication sharedApplication].alternateIconName;
-    if (currentIconName != nil) {
-        [[UIApplication sharedApplication] _setAlternateIconName:nil completionHandler:^(NSError * _Nullable error) {
-            if (error) {
-                NSLog(@"Error resetting icon: %@", error.localizedDescription);
-                [self showAlertWithTitle:@"Error" message:@"Failed to reset icon"];
-            } else {
-                NSLog(@"Icon reset successfully");
-                [self showAlertWithTitle:@"Success" message:@"Icon reset successfully"];
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    [self.tableView reloadData];
-                });
-            }
-        }];
-    } else {
-        NSLog(@"No alternate icon set to reset.");
-    }
+    [UIApplication sharedApplication]._setAlternatelconName:nil completionHandler:^(NSError * _Nullable error) {
+        if (error) {
+            NSLog(@"Error resetting icon: %@", error.localizedDescription);
+            [self showAlertWithTitle:@"Error" message:@"Failed to reset icon"];
+        } else {
+            NSLog(@"Icon reset successfully");
+            [self showAlertWithTitle:@"Success" message:@"Icon reset successfully"];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [self.tableView reloadData];
+            });
+        }
+    }];
 }
 
 - (void)saveIcon {
@@ -129,11 +124,17 @@
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         NSBundle *mainBundle = [NSBundle mainBundle];
         NSString *selectedIcon = self.selectedIconIndex >= 0 ? self.appIcons[self.selectedIconIndex] : nil;
-        NSString *selectedIconName = [selectedIcon.lastPathComponent stringByDeletingPathExtension];
-        
-        NSString *currentIconName = [UIApplication sharedApplication].alternateIconName;
-        if (![currentIconName isEqualToString:selectedIconName]) {
-            [[UIApplication sharedApplication] _setAlternateIconName:selectedIconName completionHandler:^(NSError * _Nullable error) {
+        NSString *currentIconName = [UIApplication sharedApplication]._alternateIconName;
+
+        if (![currentIconName isEqualToString:selectedIcon.lastPathComponent]) {
+            NSString *iconName = [selectedIcon.lastPathComponent stringByDeletingPathExtension];
+
+            NSString *plistPath = [mainBundle pathForResource:@"Info" ofType:@"plist"];
+            NSMutableDictionary *infoDict = [NSMutableDictionary dictionaryWithContentsOfFile:plistPath];
+            [infoDict setObject:iconName forKey:@"_alternateIconName"];
+            [infoDict writeToFile:plistPath atomically:YES];
+
+            [UIApplication sharedApplication]._setAlternatelconName:iconName completionHandler:^(NSError * _Nullable error) {
                 if (error) {
                     NSLog(@"Error setting alternate icon: %@", error.localizedDescription);
                     [self showAlertWithTitle:@"Error" message:@"Failed to set alternate icon"];
@@ -150,6 +151,7 @@
         }
     });
 }
+
 
 - (UIImage *)resizeImage:(UIImage *)image toSize:(CGSize)size {
     UIGraphicsBeginImageContextWithOptions(size, NO, [UIScreen mainScreen].scale);
