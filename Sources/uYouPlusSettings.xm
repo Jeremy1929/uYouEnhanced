@@ -268,7 +268,7 @@ extern NSBundle *uYouPlusBundle();
                         [settingsViewController reloadData];
                         SHOW_RELAUNCH_YT_SNACKBAR;
                     }
-                }];
+                }]];
                 [settingsViewController presentViewController:confirmPasteAlert animated:YES completion:nil];
             }
             return YES;
